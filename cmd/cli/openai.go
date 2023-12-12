@@ -16,7 +16,10 @@ const (
 	fnCallNone functionCallType = "none"
 )
 
+// openaiGptCompletion is a function that sends a completion request to the OpenAI GPT-3 API
+// and returns the generated text based on the provided prompt.
 func (c *oaiClients) openaiGptCompletion(ctx context.Context, prompt *strings.Builder, temp float32) (string, error) {
+	// Create a completion request with the provided prompt and temperature
 	req := openai.CompletionRequest{
 		Prompt:      []string{prompt.String()},
 		Echo:        false,
@@ -24,18 +27,23 @@ func (c *oaiClients) openaiGptCompletion(ctx context.Context, prompt *strings.Bu
 		Temperature: temp,
 	}
 
+	// Send the completion request to the OpenAI GPT API
 	resp, err := c.openAIClient.CreateCompletion(ctx, req)
 	if err != nil {
 		return "", err
 	}
 
+	// Check if the response contains exactly one choice
 	if len(resp.Choices) != 1 {
 		return "", fmt.Errorf("expected choices to be 1 but received: %d", len(resp.Choices))
 	}
 
+	// Return the generated text from the response
 	return resp.Choices[0].Text, nil
 }
 
+// openaiGptChatCompletion is a function that performs chat completion using OpenAI GPT model.
+// It takes a context, a prompt, and a temperature as input and returns the completed chat response or an error.
 func (c *oaiClients) openaiGptChatCompletion(ctx context.Context, prompt *strings.Builder, temp float32) (string, error) {
 	var (
 		resp     openai.ChatCompletionResponse
@@ -45,16 +53,18 @@ func (c *oaiClients) openaiGptChatCompletion(ctx context.Context, prompt *string
 		err      error
 	)
 
-	// if we are using the k8s API, we need to call the functions
+	// Determine the type of function call based on whether the k8s API is being used or not.
 	fnCallType := fnCallAuto
 	if !*usek8sAPI {
 		fnCallType = fnCallNone
 	}
 
 	for {
+		// Append the content to the prompt.
 		prompt.WriteString(content)
 		log.Debugf("prompt: %s", prompt.String())
 
+		// Create the chat completion request.
 		req = openai.ChatCompletionRequest{
 			Model: *openAIDeploymentName,
 			Messages: []openai.ChatCompletionMessage{
@@ -72,19 +82,20 @@ func (c *oaiClients) openaiGptChatCompletion(ctx context.Context, prompt *string
 			FunctionCall: fnCallType,
 		}
 
+		// Call the OpenAI API to get the chat completion response.
 		resp, err = c.openAIClient.CreateChatCompletion(ctx, req)
 		if err != nil {
 			return "", err
 		}
 
 		funcName = resp.Choices[0].Message.FunctionCall
-		// if there is no function call, we are done
+		// If there is no function call, we are done.
 		if funcName == nil {
 			break
 		}
 		log.Debugf("calling function: %s", funcName.Name)
 
-		// if there is a function call, we need to call it and get the result
+		// If there is a function call, we need to call it and get the result.
 		content, err = funcCall(funcName)
 		if err != nil {
 			return "", err
@@ -98,12 +109,15 @@ func (c *oaiClients) openaiGptChatCompletion(ctx context.Context, prompt *string
 	result := resp.Choices[0].Message.Content
 	log.Debugf("result: %s", result)
 
-	// remove unnessary backticks if they are in the output
+	// Remove unnecessary backticks if they are in the output.
 	result = trimTicks(result)
 
 	return result, nil
 }
 
+// trimTicks removes the tick marks from a given string.
+// It replaces all occurrences of "```yaml" and "```" with an empty string.
+// The modified string is then returned.
 func trimTicks(str string) string {
 	trimStr := []string{"```yaml", "```"}
 	for _, t := range trimStr {

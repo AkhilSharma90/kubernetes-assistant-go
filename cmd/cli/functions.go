@@ -27,12 +27,15 @@ var findSchemaNames openai.FunctionDefinition = openai.FunctionDefinition{
 	},
 }
 
+// Run fetches resource names based on the provided resource name and returns them as a string.
 func (s *schemaNames) Run() (content string, err error) {
+	// Fetch resource names
 	names, err := fetchResourceNames(s.ResourceName)
 	if err != nil {
 		return "", err
 	}
 
+	// Join names with newline separator
 	return strings.Join(names, "\n"), nil
 }
 
@@ -55,12 +58,16 @@ var getSchema openai.FunctionDefinition = openai.FunctionDefinition{
 	},
 }
 
+// Run executes the schema fetching process and returns the schema content as a string.
+// It fetches the schema for the specified resource type, marshals it into JSON, and returns the JSON string.
 func (s *schema) Run() (content string, err error) {
+	// Fetch the schema for the specified resource type
 	schema, err := fetchSchemaForResource(s.ResourceType)
 	if err != nil {
 		return "", err
 	}
 
+	// Marshal the schema into JSON
 	schemaBytes, err := json.Marshal(schema)
 	if err != nil {
 		return "", err
@@ -69,19 +76,25 @@ func (s *schema) Run() (content string, err error) {
 	return string(schemaBytes), nil
 }
 
+// funcCall is a function that handles different function calls based on the provided call name.
+// It takes a pointer to an openai.FunctionCall as input and returns a string and an error.
 func funcCall(call *openai.FunctionCall) (string, error) {
 	switch call.Name {
 	case findSchemaNames.Name:
+		// Unmarshal the call arguments into a schemaNames struct
 		var f schemaNames
 		if err := json.Unmarshal([]byte(call.Arguments), &f); err != nil {
 			return "", err
 		}
+		// Call the Run method of the schemaNames struct and return the result
 		return f.Run()
 	case getSchema.Name:
+		// Unmarshal the call arguments into a schema struct
 		var f schema
 		if err := json.Unmarshal([]byte(call.Arguments), &f); err != nil {
 			return "", err
 		}
+		// Call the Run method of the schema struct and return the result
 		return f.Run()
 	}
 	return "", nil
