@@ -22,6 +22,8 @@ const (
 	reprompt  = "Reprompt"
 )
 
+//these variables help us work with the various environment variables
+//we set flags and for each variable, we set the value of the variables from ev. variables
 var (
 	openaiAPIURLv1        = "https://api.openai.com/v1"             // The URL for the OpenAI API version 1.
 	version               = "dev"                                   // The version of the Kubernetes Assistant CLI.
@@ -77,7 +79,7 @@ func RootCmd() *cobra.Command {
 			}
 
 			// Run the main logic of the CLI
-			err := run(args)
+			err := run(args) //calling the run function defined below
 			if err != nil {
 				return err
 			}
@@ -89,7 +91,7 @@ func RootCmd() *cobra.Command {
 	// Add Kubernetes configuration flags to the command
 	kubernetesConfigFlags.AddFlags(cmd.PersistentFlags())
 
-	return cmd
+	return cmd //cmd is of type cobra.Command, a struct in the cobra package
 }
 
 func printDebugFlags() {
@@ -104,16 +106,19 @@ func printDebugFlags() {
 // run is the main function that executes the CLI command.
 // It takes a slice of arguments and returns an error if any.
 func run(args []string) error {
+	
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	// Create new OAI clients
-	oaiClients, err := newOAIClients()
+	oaiClients, err := newOAIClients() //calling the function to create new OAI clients, this func. is in completion.go file
 	if err != nil {
 		return err
 	}
 
 	var action, completion string
+	//user can generate kubectl manifest file and then he needs to take an action, apply it
+	//or not apply and we need to handle both scenarios
 	for action != apply {
 		args = append(args, action)
 
@@ -124,7 +129,8 @@ func run(args []string) error {
 			s.Start()
 		}
 
-		// Get GPT completion for the given arguments
+		// Calling the gptCompletion function by passing oaiClients which we just created above
+		//gptCompletion gives us the response in string format, this func. is defined in completion.go file
 		completion, err = gptCompletion(ctx, oaiClients, args, *openAIDeploymentName)
 		if err != nil {
 			return err
@@ -141,7 +147,8 @@ func run(args []string) error {
 		text := fmt.Sprintf("✨ Attempting to apply the following manifest:\n%s", completion)
 		fmt.Println(text)
 
-		// Prompt user for action
+		// Prompt user for action, action being apply or dontApply
+		//userActionPrompt is a function defined below
 		action, err = userActionPrompt()
 		if err != nil {
 			return err
@@ -153,6 +160,9 @@ func run(args []string) error {
 	}
 
 	// Apply the manifest
+	//apply manifest is a function in kubernetes.go and right now we're outside the for loop for the 
+	//action being not equal to apply, meaning here the action is to apply the settings
+	//this is why we call the function
 	return applyManifest(completion)
 }
 
