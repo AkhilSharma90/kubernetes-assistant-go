@@ -42,6 +42,7 @@ var (
 // InitAndExecute initializes the application and executes the root command.
 // It checks if the OpenAI key is provided and exits if it is not.
 // It then executes the root command.
+//this is the function that's being called from main.go file
 func InitAndExecute() {
 	if *openAIAPIKey == "" {
 		fmt.Println("Please provide an OpenAI key.")
