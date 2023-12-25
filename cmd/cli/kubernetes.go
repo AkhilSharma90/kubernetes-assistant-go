@@ -130,11 +130,14 @@ func applyManifest(completion string) error {
 func getKubeConfig() string {
 	var kubeConfig string
 
+	
+	//usually you'd find the config file in home directory in the path ~/.kube/config
+	//but you might have a separate kubeConfig, if you don't have it or
 	// If the KubeConfig flag is not set, use the default path: ~/.kube/config.
 	if *kubernetesConfigFlags.KubeConfig == "" {
 		kubeConfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
 	} else {
-		// If the KubeConfig flag is set, use the provided path.
+		// else, If the KubeConfig flag is set, use the provided path.
 		kubeConfig = *kubernetesConfigFlags.KubeConfig
 	}
 
