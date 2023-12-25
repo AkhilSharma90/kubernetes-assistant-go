@@ -47,6 +47,7 @@ func applyManifest(completion string) error {
 	var namespace string
 	if *kubernetesConfigFlags.Namespace == "" {
 		// If the namespace flag is not provided, retrieve the default namespace from the kubeConfig file
+		//call the getConfig function defined below
 		clientConfig, err := getConfig(kubeConfig)
 		if err != nil {
 			return err
@@ -161,7 +162,11 @@ func getConfig(kubeConfig string) (api.Config, error) {
 	return config, nil
 }
 
+//we are calling this function in the root.go file and we need the context to be able
+//to apply the manifest settings
 // getCurrentContextName returns the name of the current context in the Kubernetes configuration.
+//first we will call the getKubeConfig func. to get the config file
+//then we call getConfig func. to retrieve the actual kube config from the file
 func getCurrentContextName() (string, error) {
 	// getKubeConfig retrieves the path to the Kubernetes configuration file.
 	kubeConfig := getKubeConfig()
